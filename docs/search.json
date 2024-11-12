@@ -1,0 +1,261 @@
+[
+  {
+    "objectID": "seminar09.html#attendance",
+    "href": "seminar09.html#attendance",
+    "title": "Seminar 09",
+    "section": "Attendance",
+    "text": "Attendance"
+  },
+  {
+    "objectID": "seminar09.html#reminders",
+    "href": "seminar09.html#reminders",
+    "title": "Seminar 09",
+    "section": "Reminders",
+    "text": "Reminders\n\nDiscuss  (specifically lm) at Thu workshop.\nDiscuss worksheet 9 at Fri workshop.\nLab 6 due Fri 2024-11-15 at 17:00."
+  },
+  {
+    "objectID": "seminar09.html#special-announcement",
+    "href": "seminar09.html#special-announcement",
+    "title": "Seminar 09",
+    "section": "Special Announcement   ",
+    "text": "Special Announcement   \nEMS Invited Lecture will take place on\nFriday, 15 Nov 2024, at 15:00 in Fulton F20\n(tea served from 14:00 in common room)\nSpeaker: Prof Anna-Karin Tornberg, KTH Stockholm"
+  },
+  {
+    "objectID": "seminar09.html#outline-of-today",
+    "href": "seminar09.html#outline-of-today",
+    "title": "Seminar 09",
+    "section": " Outline of today",
+    "text": "Outline of today\n\nGoodness-of-fit tests using the \\chi^2 distribution…\n\n… for a single factor\n… for independence of two factors\n\nHow to use R to evaluate goodness-of-fit\nInferences for ANOVA\nInferences for least squares models"
+  },
+  {
+    "objectID": "seminar09.html#what-is-testing-for-goodness-of-fit",
+    "href": "seminar09.html#what-is-testing-for-goodness-of-fit",
+    "title": "Seminar 09",
+    "section": "What is testing for goodness-of-fit?",
+    "text": "What is testing for goodness-of-fit?\n\nEvaluate distribution of one factor (AKA categorical variable) that has more than two levels (AKA categories)\nCompare observed distribution of the factor (i.e., proportion of sample in each level) to a hypothetical population distribution\nUses \\chi^2 distribution test statistic to decide if the deviation is statistically significant"
+  },
+  {
+    "objectID": "seminar09.html#example-ethnicity-in-scotland",
+    "href": "seminar09.html#example-ethnicity-in-scotland",
+    "title": "Seminar 09",
+    "section": "Example: Ethnicity in Scotland",
+    "text": "Example: Ethnicity in Scotland\nConsider the breakdown of population by ethnicity (simplified) from Scotland’s Census 2011.\n\nglimpse(census)\n\nRows: 4\nColumns: 2\n$ ethnicity   &lt;fct&gt; White, Asian, Black, Other\n$ perc_census &lt;dbl&gt; 96.0, 2.7, 1.0, 0.3\n\n\n\nlevels(census$ethnicity)\n\n[1] \"White\" \"Asian\" \"Black\" \"Other\"\n\n\n\n\n\n\n\n\nLevel up\n\n\nTo use levels the variable (here ethnicity) needs to be of type factor (&lt;fct&gt;). To coerce strings into factors: census$ethnicity &lt;- factor(census$ethnicity).\n\n\n\n\n\nOur categorical variable is ‘Ethnicity’ and it has 4 levels\nActual categories: Asian = (Asian, Asian Scot, Asian British), Black = (African, Caribbean, Black), Other = (All other and Mixed/Multiple)"
+  },
+  {
+    "objectID": "seminar09.html#example-prison-population",
+    "href": "seminar09.html#example-prison-population",
+    "title": "Seminar 09",
+    "section": "Example: Prison population",
+    "text": "Example: Prison population\n\nEthnicity is not a factor that predisposes one to commit a crime. Therefore, we would expect the prison population of Scotland to mirror the true population of Scotland.\nSuppose we collected a sample of observations of ethnicity from the prison population.\n\n\n\n\n\n\nTip\n\n\nCould we make an inference to decide if the observed difference in the ethnicity of the prison population was significant or due to chance variation?"
+  },
+  {
+    "objectID": "seminar09.html#example-prison-population-1",
+    "href": "seminar09.html#example-prison-population-1",
+    "title": "Seminar 09",
+    "section": "Example: Prison population",
+    "text": "Example: Prison population\n\nTo compare the distribution of ethnicity from a sample of the prison population to the distribution of ethnicity in Scotland, we consider a hypothesis test.\nH_0 (nothing going on - the data is consistent with the specified reference distribution): The prison population is a simple random sample from the total population. The observed counts of prisoners by ethnicity follow the same ethnicity distribution as population.\nH_a (something is going on, AKA our research question - the data is NOT consistent with the specified reference distribution): The prison population is not a simple random sample from the total population. The observed counts of prisoners by ethnicity do not follow the same ethnicity distribution as population."
+  },
+  {
+    "objectID": "seminar09.html#how-do-we-evaluate-these-hypothesis",
+    "href": "seminar09.html#how-do-we-evaluate-these-hypothesis",
+    "title": "Seminar 09",
+    "section": "How do we evaluate these hypothesis?",
+    "text": "How do we evaluate these hypothesis?\n\nQuantify how different the observed counts are from the expected counts.\nLarge deviations from what would be expected based on sampling variation alone would be strong evidence against H_0."
+  },
+  {
+    "objectID": "seminar09.html#goodness-of-fit-test",
+    "href": "seminar09.html#goodness-of-fit-test",
+    "title": "Seminar 09",
+    "section": "Goodness-of-fit test",
+    "text": "Goodness-of-fit test\nHow well do the observed data fit expected distribution?\n\n\n\n\n\n\nEthnicity\n% Population (Census)\nProportion\nExpected\n\n\n\n\nWhite\n96.0\n0.960\n\n\n\nAsian\n2.7\n0.027\n\n\n\nBlack\n1.0\n0.010\n\n\n\nOther\n0.3\n0.003\n\n\n\nTotal\n100.0\n1.000\n2000\n\n\n\n\n\n\n\n\n\n\nExpected: 1920, 54, 20, 6. Double check this sums to n=2000 (!)"
+  },
+  {
+    "objectID": "seminar09.html#conditions",
+    "href": "seminar09.html#conditions",
+    "title": "Seminar 09",
+    "section": "Conditions",
+    "text": "Conditions\nIndependence - sample observations must be independent\n\nRandom sampling\nIf sampling w/o replacement, m &lt; 10% population\nEach factor only contributes to one scenario (cell) in table\n\nSample size\nEach scenario (cell) must have at least 5 expected cases"
+  },
+  {
+    "objectID": "seminar09.html#anatomy-of-a-test-statistic",
+    "href": "seminar09.html#anatomy-of-a-test-statistic",
+    "title": "Seminar 09",
+    "section": "Anatomy of a test statistic",
+    "text": "Anatomy of a test statistic\n\n\n\n\n\n\nGeneral form of test statistic\n\n\n\\frac{\\text{point estimate} - \\text{null value}}{\\text{SE of point estimate}}\n\n\n\n\nIdentify difference between a point estimate and expected value assuming null hypothesis is true.\nStandardizes the difference using the standard error of the point estimate."
+  },
+  {
+    "objectID": "seminar09.html#goodness-of-fit-statistic",
+    "href": "seminar09.html#goodness-of-fit-statistic",
+    "title": "Seminar 09",
+    "section": "Goodness-of-fit statistic",
+    "text": "Goodness-of-fit statistic\n\\sum_{i=1}^{k} \\frac{(O_i - E_i)^2}{E_i} = V \\qquad \\sim \\chi^2(k-1)\n\n\n\n\n\n\nWhy square?\n\n\n\nPositive standardized difference\nUnusual differences become even more unusual.\n\n\n\n\n\n\nk number of cells i.e. levels of categorical variable; O observed; E expected\ndf is k-1 number of levels minus 1"
+  },
+  {
+    "objectID": "seminar09.html#recall-the-chi2-distribution",
+    "href": "seminar09.html#recall-the-chi2-distribution",
+    "title": "Seminar 09",
+    "section": "Recall the \\chi^2 distribution",
+    "text": "Recall the \\chi^2 distribution\n\nDegrees of freedom (df) influences the shape, center and spread of distribution."
+  },
+  {
+    "objectID": "seminar09.html#example-sample-data",
+    "href": "seminar09.html#example-sample-data",
+    "title": "Seminar 09",
+    "section": "Example: sample data",
+    "text": "Example: sample data\nA random sample of 2000 inmates in year 2011-2012 yields:\n\n\n\n\n\n\nEthnicity\n% Population (Census)\nExpected\nObserved\n\n\n\n\nWhite\n96.0\n1920\n1925\n\n\nAsian\n2.7\n54\n52\n\n\nBlack\n1.0\n20\n9\n\n\nOther\n0.3\n6\n14\n\n\nTotal\n100.0\n2000\n2000\n\n\n\n\n\n\n\n\nCompare observed sample to hypothetical expected distribution to understand if the observed differences are due to chance variation alone."
+  },
+  {
+    "objectID": "seminar09.html#example-calculating-test-statistic",
+    "href": "seminar09.html#example-calculating-test-statistic",
+    "title": "Seminar 09",
+    "section": "Example: calculating test statistic",
+    "text": "Example: calculating test statistic\n\n\n\n\n\n\nExpected\nObserved\nNormalized squared deviations\n\n\n\n\n1920\n1925\n\n\n\n54\n52\n\n\n\n20\n9\n\n\n\n6\n14\n\n\n\n\n\n\n\n\n\n\n\nNorm sq dev: 0.01302083 0.07407407 6.05000000 10.66666667\n(1920-1925)^2/1920 + (54-52)^2/54 + (20-9)^2/20 + (6-14)^2/6 = 16.80376"
+  },
+  {
+    "objectID": "seminar09.html#p-value",
+    "href": "seminar09.html#p-value",
+    "title": "Seminar 09",
+    "section": "P-value",
+    "text": "P-value\n\nThe P-value is always positive and a higher value of the test statistic means larger deviations from the null hypothesis.\nThe P-value is given by the tail area to right of calculated statistic.\n\n\npchisq(16.80376, df = 4-1, lower.tail = FALSE)\n\n[1] 0.0007755476\n\n\n\nSince P-value of p = 0.00078 \\ll 0.05 = \\alpha we would reject the null hypothesis at 0.05 level.\nThe data provide sufficient evidence that the prison population of Scotland is not representative of the general population.\n\n\n\nSame as F statistic"
+  },
+  {
+    "objectID": "seminar09.html#using-r-for-goodness-of-fit-for-a-single-factor",
+    "href": "seminar09.html#using-r-for-goodness-of-fit-for-a-single-factor",
+    "title": "Seminar 09",
+    "section": "Using R for Goodness-of-fit for a single factor",
+    "text": "Using R for Goodness-of-fit for a single factor\n\njail |&gt; select(obs, perc_census) |&gt; glimpse()\n\nRows: 4\nColumns: 2\n$ obs         &lt;dbl&gt; 1925, 52, 9, 14\n$ perc_census &lt;dbl&gt; 96.0, 2.7, 1.0, 0.3\n\n\n\n\nchisq.test(jail$obs, p = jail$perc_census, rescale.p = TRUE)\n\n\n    Chi-squared test for given probabilities\n\ndata:  jail$obs\nX-squared = 16.804, df = 3, p-value = 0.0007755"
+  },
+  {
+    "objectID": "seminar09.html#recall-penguin-data",
+    "href": "seminar09.html#recall-penguin-data",
+    "title": "Seminar 09",
+    "section": "Recall penguin data",
+    "text": "Recall penguin data\nThe Palmer penguin data records species (a factor with three levels) and island (a factor with three levels).\n\nglimpse(penguins)\n\nRows: 344\nColumns: 8\n$ species           &lt;fct&gt; Adelie, Adelie, Adelie, Adelie, Adelie, Adelie, Adel…\n$ island            &lt;fct&gt; Torgersen, Torgersen, Torgersen, Torgersen, Torgerse…\n$ bill_length_mm    &lt;dbl&gt; 39.1, 39.5, 40.3, NA, 36.7, 39.3, 38.9, 39.2, 34.1, …\n$ bill_depth_mm     &lt;dbl&gt; 18.7, 17.4, 18.0, NA, 19.3, 20.6, 17.8, 19.6, 18.1, …\n$ flipper_length_mm &lt;int&gt; 181, 186, 195, NA, 193, 190, 181, 195, 193, 190, 186…\n$ body_mass_g       &lt;int&gt; 3750, 3800, 3250, NA, 3450, 3650, 3625, 4675, 3475, …\n$ sex               &lt;fct&gt; male, female, female, NA, female, male, female, male…\n$ year              &lt;int&gt; 2007, 2007, 2007, 2007, 2007, 2007, 2007, 2007, 2007…"
+  },
+  {
+    "objectID": "seminar09.html#two-factors-island-and-species",
+    "href": "seminar09.html#two-factors-island-and-species",
+    "title": "Seminar 09",
+    "section": "Two factors: island and species",
+    "text": "Two factors: island and species\nThe counts of data in each factor are used to generate a contingency table.\n\npenguins |&gt; tabyl(island, species)\n\n    island Adelie Chinstrap Gentoo\n    Biscoe     44         0    124\n     Dream     56        68      0\n Torgersen     52         0      0\n\n\n\n\n\n\n\n\n\njanitor::tabyl makes creating contingency tables easier.\n\n\nThe chisq.test can be applied to contingency tabyls."
+  },
+  {
+    "objectID": "seminar09.html#are-island-and-species-independent",
+    "href": "seminar09.html#are-island-and-species-independent",
+    "title": "Seminar 09",
+    "section": "Are island and species independent?",
+    "text": "Are island and species independent?\n\npenguins |&gt; ggplot(aes(island, species)) + geom_bin_2d()"
+  },
+  {
+    "objectID": "seminar09.html#hypothesis-for-independence",
+    "href": "seminar09.html#hypothesis-for-independence",
+    "title": "Seminar 09",
+    "section": "Hypothesis for independence",
+    "text": "Hypothesis for independence\nH_0: \\; p_{ij} = p_{i} \\cdot p_{j} \\; \\forall (i,j), i.e. the two factors are independent (the joint distribution can be factored into product of marginals).\nH_a: H_0 is false, i.e. the two factors are associated.\n\n\n\n\n\n\nCalculation of \\chi^2 test statistic\n\n\nFollows by considering the normalized squared deviations of the expected cell counts in the contingency table."
+  },
+  {
+    "objectID": "seminar09.html#using-r-for-goodness-of-fit-for-independence",
+    "href": "seminar09.html#using-r-for-goodness-of-fit-for-independence",
+    "title": "Seminar 09",
+    "section": "Using R for Goodness-of-fit for independence",
+    "text": "Using R for Goodness-of-fit for independence\n\npenguins |&gt; tabyl(island, species) |&gt; janitor::chisq.test() \n\n\n    Pearson's Chi-squared test\n\ndata:  tabyl(penguins, island, species)\nX-squared = 299.55, df = 4, p-value &lt; 2.2e-16\n\n\n\nThe data provide very strong evidence (p &lt; 10^{-16}) to reject the null hypothesis. Species and island are associated."
+  },
+  {
+    "objectID": "seminar09.html#what-hypothesis-does-anova-test",
+    "href": "seminar09.html#what-hypothesis-does-anova-test",
+    "title": "Seminar 09",
+    "section": "What hypothesis does ANOVA test?",
+    "text": "What hypothesis does ANOVA test?"
+  },
+  {
+    "objectID": "seminar09.html#the-setting-linear-functions-of-means",
+    "href": "seminar09.html#the-setting-linear-functions-of-means",
+    "title": "Seminar 09",
+    "section": "The setting: Linear functions of means",
+    "text": "The setting: Linear functions of means\n\nYour sample has m observations in total.\nYour problem has k populations with means \\mu_1, \\dots, \\mu_k (and equal variances).\nSuppose your ANOVA test is statistically significant.\n\n\n\n\n\n\n\nParameter of interest (linear function of means):\n\n\n\\theta = \\sum_{i=1}^k c_i \\mu_i\\,, for constants c_i, i=1,\\dots,k."
+  },
+  {
+    "objectID": "seminar09.html#alpha-ci-for-theta",
+    "href": "seminar09.html#alpha-ci-for-theta",
+    "title": "Seminar 09",
+    "section": "100(1-\\alpha)\\% CI for \\theta",
+    "text": "100(1-\\alpha)\\% CI for \\theta\n\\sum_{i=1}^k c_i \\bar{x}_i \\pm t_{\\alpha/2, m-k} \\cdot \\left(\\mathsf{MSE} \\sum_{i=1}^k \\frac{c_i^2}{m_i}\\right)^{1/2}\nThis uses \\mathsf{MSE} as an estimator for population variance in \\mathsf{se}(\\hat{\\theta}) and \\mathsf{t}(m-k) as the sampling distribution for \\hat{\\theta}."
+  },
+  {
+    "objectID": "seminar09.html#example-anova-uk-average-salary",
+    "href": "seminar09.html#example-anova-uk-average-salary",
+    "title": "Seminar 09",
+    "section": "Example: ANOVA UK average salary",
+    "text": "Example: ANOVA UK average salary\nAverage salary data from 20 local councils. Is the mean average salary in each nation the same at 5% significance level?\n\n\n\n\n\n\nNation\nAverage salaries ('000 £)\nSize\nSample Mean\nSample SD\n\n\n\n\nEngland\n17, 12, 18, 13, 15, 12\n6\n14.5\n2.588\n\n\nN Ireland\n11, 7, 9, 13\n4\n10.0\n2.582\n\n\nScotland\n15, 10, 13, 14, 13\n5\n13.0\n1.871\n\n\nWales\n10, 12, 8, 7, 9\n5\n9.2\n1.924\n\n\n\n\n\n\n\n\n\n\naov(mean_salary ~ nation, data = salaries) |&gt; summary()\n\n            Df Sum Sq Mean Sq F value  Pr(&gt;F)   \nnation       3   97.5   32.50   6.318 0.00495 **\nResiduals   16   82.3    5.14                   \n---\nSignif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1"
+  },
+  {
+    "objectID": "seminar09.html#ci-for-mu_eng---mu_sco",
+    "href": "seminar09.html#ci-for-mu_eng---mu_sco",
+    "title": "Seminar 09",
+    "section": "90\\% CI for (\\mu_{Eng} - \\mu_{Sco})",
+    "text": "90\\% CI for (\\mu_{Eng} - \\mu_{Sco})\nWhat we know:\nm = 20 obs, k=4 groups, with “unequal” design: m_{Eng} = 6 and m_{Sco} = 5.\nSample means: \\hat{\\mu}_{Eng} = 14.5 and \\hat{\\mu}_{Sco} = 13.0.\n\\mathsf{MSE} = 5.14375 from ANOVA output.\nCritical value:\n\nqt(0.1/2, df = 20 - 4, lower.tail = FALSE)\n\n[1] 1.745884\n\n\nPutting it all together…"
+  },
+  {
+    "objectID": "seminar09.html#what-parameters-can-inferences-be-made-for-in-a-least-squares-model",
+    "href": "seminar09.html#what-parameters-can-inferences-be-made-for-in-a-least-squares-model",
+    "title": "Seminar 09",
+    "section": "What parameters can inferences be made for in a least squares model?",
+    "text": "What parameters can inferences be made for in a least squares model?"
+  },
+  {
+    "objectID": "seminar09.html#the-setting-least-squares-model",
+    "href": "seminar09.html#the-setting-least-squares-model",
+    "title": "Seminar 09",
+    "section": "The setting: Least squares model",
+    "text": "The setting: Least squares model\n\nSimple linear regression model for response Y with explanatory var X:  Y = \\beta_0 + \\beta_1 X + \\epsilon \\,.\nFitted (least squares) line:  \\hat{y} = \\widehat{\\beta}_0 + \\widehat{\\beta}_1 x \\,.\n\n\n\n\n\n\n\nNote\n\n\n\nInferences for \\sigma^2, variance of random deviation in model (i.e., variance of \\epsilon_i)\nInferences for \\beta_0 and \\beta_1\nPrediction intervals for Y given x"
+  },
+  {
+    "objectID": "seminar09.html#inferences-for-sigma2",
+    "href": "seminar09.html#inferences-for-sigma2",
+    "title": "Seminar 09",
+    "section": "Inferences for \\sigma^2",
+    "text": "Inferences for \\sigma^2\n\nPoint estimate S^2 = \\frac{\\mathsf{RSS}}{m-2}\nCI and H-Test use: (m-2) \\frac{S^2}{\\sigma^2} \\sim \\chi^2(m-2) \nRSS (residual sum of squares i.e. sum of the squares of residuals)"
+  },
+  {
+    "objectID": "seminar09.html#h-tests-for-beta_i",
+    "href": "seminar09.html#h-tests-for-beta_i",
+    "title": "Seminar 09",
+    "section": "H-tests for \\beta_i",
+    "text": "H-tests for \\beta_i\n\nNull hypothesis H_0 : \\beta_i = \\beta_{i0}.\nT test: T = \\frac{\\widehat{\\beta}_i - \\beta_{i0}}{S \\sqrt{c_{ii}}} where c_{11} = 1/S_{xx} and c_{00} = (\\sum x_i^2)/(m S_{xx}).\nP values are areas under \\mathsf{t}(m-2)."
+  },
+  {
+    "objectID": "seminar09.html#alpha-ci-for-beta_i",
+    "href": "seminar09.html#alpha-ci-for-beta_i",
+    "title": "Seminar 09",
+    "section": "100(1-\\alpha)\\% CI for \\beta_i",
+    "text": "100(1-\\alpha)\\% CI for \\beta_i\n\\widehat{\\beta}_i \\pm t_{\\alpha/2, m-2} S \\sqrt{c_{ii}} where c_{11} = 1/S_{xx} and c_{00} = (\\sum x_i^2)/(m S_{xx})."
+  },
+  {
+    "objectID": "seminar09.html#prediction-interval-for-y",
+    "href": "seminar09.html#prediction-interval-for-y",
+    "title": "Seminar 09",
+    "section": "Prediction Interval for Y",
+    "text": "Prediction Interval for Y\nPrediction interval for a value of Y when x = x^* is given by (\\widehat{\\beta}_0 + \\widehat{\\beta}_1 x^*) \\pm t_{\\alpha/2, m-2} S \\sqrt{1 + \\frac{1}{n} + \\frac{(x^* - \\bar{x})^2}{S_{xx}}} \n\n\n\n\n\n\nThis is not the same as the confidence interval for expected Y.\n\n\nThe prediction interval is “wider” than the equivalent confidence interval!"
+  },
+  {
+    "objectID": "seminar09.html#example-palmer-penguins",
+    "href": "seminar09.html#example-palmer-penguins",
+    "title": "Seminar 09",
+    "section": "Example: Palmer penguins",
+    "text": "Example: Palmer penguins"
+  },
+  {
+    "objectID": "seminar09.html#example-fit-of-body-mass-on-species",
+    "href": "seminar09.html#example-fit-of-body-mass-on-species",
+    "title": "Seminar 09",
+    "section": "Example: Fit of body mass on species",
+    "text": "Example: Fit of body mass on species\n\nfit &lt;- lm(body_mass_g ~ species, data = penguins)\nsummary(fit)\n\n\nCall:\nlm(formula = body_mass_g ~ species, data = penguins)\n\nResiduals:\n     Min       1Q   Median       3Q      Max \n-1126.02  -333.09   -33.09   316.91  1223.98 \n\nCoefficients:\n                 Estimate Std. Error t value Pr(&gt;|t|)    \n(Intercept)       3700.66      37.62   98.37   &lt;2e-16 ***\nspeciesChinstrap    32.43      67.51    0.48    0.631    \nspeciesGentoo     1375.35      56.15   24.50   &lt;2e-16 ***\n---\nSignif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1\n\nResidual standard error: 462.3 on 339 degrees of freedom\n  (2 observations deleted due to missingness)\nMultiple R-squared:  0.6697,    Adjusted R-squared:  0.6677 \nF-statistic: 343.6 on 2 and 339 DF,  p-value: &lt; 2.2e-16\n\n\n\n\nDefaults to an effects parameterization, whereby the first categorical group (here species) is the reference or baseline group and is called the intercept.\nEstimate for intercept is the first group’s (specie’s) mean\nCoefficients for the other groups represent the effect of being in that group, hence the effect parameterization.\nThe way to get the group coefficients for all groups after the first group is to add the estimate of the intercept (first group) to each of the other groups\nIt is advisable to ignore the test statistics and p-values for the individual coefficients as there are better ways to examine them.\nF-statistic is the test statistic for ANOVA, e.g., p-value &lt;0.05 tells us that at least one group mean differs from another at the α=0.05 level of significance …\n\nRecall: - Residual standard error: This is the standard deviation (spread) of residuals. - Multiple R-squared: % of variance explained by model. While a higher R2 is “better”, R2 always increases with additional model terms - Adjusted R-squared: % of variance explained by model adjusted for more model terms that may not be that explanatory. The formula for the adjusted R2 is: 1− (1−R^2) \\frac{n−1}{n−p−1} - F-statistic: statistic for the model (compared the t statistics which were for individual coefficients). F-statistic tests the null hypothesis that all model coefficients = 0 (ratio of two variances: variance explained by parameters and residual, unexplained variance). You will not typically report an F-statistic in a linear regression model, but you will for an ANOVA."
+  },
+  {
+    "objectID": "seminar09.html#example-compare-lm-to-aov",
+    "href": "seminar09.html#example-compare-lm-to-aov",
+    "title": "Seminar 09",
+    "section": "Example: Compare lm to aov…",
+    "text": "Example: Compare lm to aov…\n\nonewaypenguin &lt;- aov(body_mass_g ~ species, data = penguins)\nsummary(onewaypenguin)\n\n             Df    Sum Sq  Mean Sq F value Pr(&gt;F)    \nspecies       2 146864214 73432107   343.6 &lt;2e-16 ***\nResiduals   339  72443483   213698                   \n---\nSignif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1\n2 observations deleted due to missingness"
+  }
+]

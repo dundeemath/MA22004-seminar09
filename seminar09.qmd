@@ -1,0 +1,570 @@
+---
+title: "Seminar 09"
+subtitle: "MA22004"
+date: "2024-11-13"
+author: "Dr Eric Hall   •   ehall001@dundee.ac.uk"
+format: 
+  revealjs:
+    chalkboard: true
+    html-math-method: katex
+    theme: [default, resources/custom.scss]
+    css: resources/fonts.css
+    logo: resources/logo.png
+    footer: ""
+    template-partials:
+      - resources/title-slide.html
+    transition: slide
+    background-transition: fade
+from: markdown+emoji
+lang: en
+---
+
+```{r}
+#| include: false
+options(knitr.kable.NA = '')
+knitr::opts_chunk$set(echo = FALSE, comment = "", fig.asp = .5)
+library(tidyverse)
+library(latex2exp)
+library(openintro)
+library(knitr)
+library(kableExtra)
+library(fontawesome)
+library(janitor)
+library(cowplot)
+
+library(palmerpenguins)
+data("penguins")
+
+adelie <- penguins |> filter(species == "Adelie") |> na.exclude()
+fit <- lm(body_mass_g ~ flipper_length_mm, data = adelie)
+
+
+# https://www.scotlandscensus.gov.uk/census-results/at-a-glance/ethnicity/
+ethlev <- c("White", "Asian", "Black", "Other")
+#p <- c(.9602, .0266, 0.0068, 0.0064)
+#out <- rmultinom(1, 2000, p)
+jail <- read_csv("data/jail.csv")
+jail$ethnicity <- factor(jail$ethnicity, levels=ethlev)
+
+n <- 2000 #size of sample from prison population
+jail <- jail |> mutate(expec = perc_census * 2000/100)
+jail <- jail |> mutate(normsqdev = (expec-obs)^2 / expec)
+
+census <- jail |> select(ethnicity, perc_census)
+
+
+salaries <- read_csv("data/anova-salaries.csv")
+salaries$nation <- factor(salaries$nation)
+oneway <- aov(mean_salary ~ nation, data = salaries)
+
+mse <- (5*(2.588)^2 + 3*(2.582)^2 + 4*(1.871)^2 + 4*(1.924)^2)/16
+mstr <- (6*(14.5-11.9)^2 + 4*(10.0 - 11.9)^2 + 5*(13.0-11.9)^2 + 5*( 9.2 - 11.9)^2) / 3
+
+lsz <- 1.0
+tsz <- 4
+theme_ur <- theme(legend.justification = c(1,1), legend.position = c(1,1), legend.box.margin = margin(c(4, 4, 4, 4), unit = "pt"))
+theme_lr <- theme(legend.justification = c(1,0), legend.position = c(1,0), legend.box.margin = margin(c(4, 4, 4, 4), unit = "pt"))
+
+theme_set(theme_classic())
+```
+
+# Announcements {.mySegue .center}
+:::{.hidden}
+\DeclareMathOperator{\Var}{Var}
+\DeclareMathOperator{\E}{\mathbf{E}}
+\DeclareMathOperator{\Cov}{Cov}
+\DeclareMathOperator{\corr}{corr}
+\newcommand{\se}{\mathsf{se}}
+\DeclareMathOperator{\sd}{sd}
+:::
+
+## Attendance
+
+::: {layout="[[-1], [1], [-1]]"}
+![](images/seats.png){fig-align="center" fig-alt="Register your attendance using SEAtS"}
+:::
+
+## Reminders 
+
+- Discuss `r fa("r-project")` (specifically `lm`) at Thu workshop. 
+- Discuss worksheet 9 at Fri workshop.
+- Lab 6 due **Fri 2024-11-15** at **17:00**. 
+
+## Special Announcement `r fa("bullhorn")` `r fa("bullhorn")` `r fa("bullhorn")`
+
+EMS Invited Lecture will take place on 
+
+**Friday, 15 Nov 2024, at 15:00 in Fulton F20** 
+
+(tea served from 14:00 in common room)
+
+Speaker: Prof Anna-Karin Tornberg, KTH Stockholm
+
+## `r fa("compass")` Outline of today
+
+- Goodness-of-fit tests using the $\chi^2$ distribution...
+  - ... for a single factor
+  - ... for independence of two factors
+- How to use `R` to evaluate goodness-of-fit
+- Inferences for ANOVA
+- Inferences for least squares models
+
+# Goodness-of-fit for a single factor {.mySegue .center}
+
+
+## What is testing for goodness-of-fit?
+
+- Evaluate distribution of one factor (AKA categorical variable) that has more than two levels (AKA categories)
+- Compare observed distribution of the factor (i.e., proportion of sample in each level) to a hypothetical population distribution
+- Uses $\chi^2$ distribution test statistic to decide if the deviation is statistically significant 
+
+## Example: Ethnicity in Scotland {.smaller}
+
+Consider the breakdown of population by ethnicity (simplified) from Scotland's Census 2011.
+
+```{r}
+#| echo: true
+#| message: false
+glimpse(census)
+``` 
+```{r}
+#| echo: true
+#| message: false
+levels(census$ethnicity)
+``` 
+
+:::{.callout-warning}
+## Level up
+
+To use `levels` the variable (here `ethnicity`) needs to be of type factor (`<fct>`). To coerce strings into factors: `census$ethnicity <- factor(census$ethnicity)`.
+:::
+
+:::{.notes}
+- Our categorical variable is 'Ethnicity' and it has 4 levels
+- Actual categories: Asian = (Asian, Asian Scot, Asian British), Black = (African, Caribbean, Black), Other = (All other and Mixed/Multiple)
+:::
+
+## Example: Prison population {.smaller}
+
+![](images/jail.jpg){width=35% .right style="padding:16px" alt="Just visiting jail."}
+
+Ethnicity is not a factor that predisposes one to commit a crime. Therefore, we would expect the prison population of Scotland to mirror the true population of Scotland. 
+
+Suppose we collected a sample of observations of ethnicity from the prison population. 
+
+:::{.callout-tip}
+Could we make an inference to decide if the observed difference in the ethnicity of the prison population was significant or due to chance variation?
+:::
+
+## Example: Prison population {.smaller}
+
+- To compare the distribution of ethnicity from a sample of the prison population to the distribution of ethnicity in Scotland, we consider a hypothesis test.
+
+- $H_0$ (*nothing* going on - the data is consistent with the specified reference distribution): The prison population is a simple random sample from the total population. The observed counts of prisoners by ethnicity **follow the same** ethnicity **distribution** as population. 
+
+- $H_a$ (something *is* going on, AKA our *research question* - the data is NOT consistent with the specified reference distribution): The prison population is not a simple random sample from the total population. The observed counts of prisoners by ethnicity **do not follow the same** ethnicity **distribution** as population.
+
+## How do we evaluate these hypothesis?
+
+- Quantify how different the observed counts are from the expected counts.
+- Large deviations from what would be expected based on sampling variation alone would be strong evidence against $H_0$.
+
+## Goodness-of-fit test
+
+How well do the observed data fit expected distribution?
+
+```{r}
+#| message: false
+dattab <- jail |>
+ select(ethnicity, perc_census) |> mutate(prop = perc_census/100) |>
+ adorn_totals()
+dattab$E <- NA
+dattab$E[5] <- 2000
+
+kbl(dattab, col.names = c('Ethnicity', "% Population (Census)", "Proportion", "Expected"), booktabs = T)
+``` 
+
+:::{.notes}
+- Expected: 1920,   54,   20,    6.  Double check this sums to n=2000 (!)
+:::
+
+## Conditions
+
+### Independence - sample observations must be independent
+
+- Random sampling
+- If sampling w/o replacement, $m < 10%$ population
+- Each factor only contributes to one scenario (cell) in table 
+
+### Sample size 
+
+Each scenario (cell) must have at least 5 expected cases
+
+## Anatomy of a test statistic 
+
+:::{.callout-note}
+## General form of test statistic
+
+$$\frac{\text{point estimate} - \text{null value}}{\text{SE of point estimate}}$$
+:::
+
+1. Identify difference between a point estimate and expected value assuming null hypothesis is true.
+2. Standardizes the difference using the standard error of the point estimate. 
+
+
+## Goodness-of-fit statistic
+
+$$\sum_{i=1}^{k} \frac{(O_i - E_i)^2}{E_i} = V \qquad \sim \chi^2(k-1)$$ 
+
+:::{.callout-note}
+## Why square?
+
+1. Positive standardized difference
+2. Unusual differences become even more unusual. 
+:::
+
+:::{.notes}
+- $k$ number of cells i.e. levels of categorical variable; $O$ observed; $E$ expected
+- df is $k-1$ number of levels minus 1
+:::
+
+
+## Recall the $\chi^2$ distribution
+
+```{r}
+#| echo: FALSE 
+#| warning: FALSE
+#| fig-cap: "Degrees of freedom (df) influences the *shape*, *center* and *spread* of distribution."
+chisq.dist <- data.frame(chisq = 0:7000 / 100) |> 
+ mutate(df2 = dchisq(x = chisq, df = 2),
+        df4 = dchisq(x = chisq, df = 4),
+        df9 = dchisq(x = chisq, df = 9)) |>
+ gather(key = "df", value = "density", -chisq)
+chisq.dist$df <- factor(chisq.dist$df, levels = c("df2", "df4", "df9"), labels = c(2, 4, 9))
+ggplot(chisq.dist, aes(x = chisq, y = density, color = df, linetype = df)) +
+ geom_line(size = lsz) + ylim(c(0,.6)) + xlim(c(0,15)) +
+ labs(y = TeX("$f(x;\\nu)$"), x = TeX("$x$"), color = TeX("$\\nu$ (df)"), linetype = TeX("$\\nu$ (df)")) 
+```
+
+## Example: sample data {.smaller}
+
+A random sample of 2000 inmates in year 2011-2012 yields:
+
+```{r}
+#| message: false
+dattab <- jail |>
+ select(ethnicity, perc_census, expec, obs) |>
+ adorn_totals()
+
+kbl(dattab, col.names = c('Ethnicity', "% Population (Census)", "Expected", "Observed"), booktabs = T)
+``` 
+
+**Compare observed sample to hypothetical expected distribution to understand if the observed differences are due to chance variation alone.**
+
+
+## Example: calculating test statistic
+
+```{r}
+#| message: false
+dattab <- jail |>
+ select(expec, obs)
+dattab$S <- NA
+
+kbl(dattab, col.names = c("Expected", "Observed", "Normalized squared deviations"), booktabs = T)
+``` 
+
+:::{.notes}
+- Norm sq dev: 0.01302083  0.07407407  6.05000000 10.66666667
+- $(1920-1925)^2/1920 + (54-52)^2/54 + (20-9)^2/20 + (6-14)^2/6 = 16.80376$
+:::
+
+
+## $P$-value {.smaller}
+
+- The $P$-value is always positive and a higher value of the test statistic means larger deviations from the null hypothesis. 
+
+- The $P$-value is given by the **tail area to right of calculated statistic**. 
+
+```{r}
+#| echo: true
+#| eval: true
+pchisq(16.80376, df = 4-1, lower.tail = FALSE)
+```
+
+- Since $P$-value of $p = 0.00078 \ll 0.05 = \alpha$ we would **reject** the null hypothesis at $0.05$ level.
+
+- The data provide sufficient evidence that the prison population of Scotland is not representative of the general population. 
+
+:::{.notes}
+- Same as $F$ statistic
+:::
+
+## Using `R` for Goodness-of-fit for a single factor
+
+```{r}
+#| echo: true
+#| eval: true
+#| warning: false
+#| message: false
+jail |> select(obs, perc_census) |> glimpse()
+```
+
+</br>
+
+```{r}
+#| echo: true
+#| eval: true
+chisq.test(jail$obs, p = jail$perc_census, rescale.p = TRUE)
+```
+
+# Independence of two factors {.mySegue .center}
+
+
+## Recall `penguin` data {.smaller}
+
+The Palmer penguin data records species (a factor with three levels) and island (a factor with three levels).
+
+```{r penguins-glimpse, echo = TRUE, eval = TRUE}
+glimpse(penguins)
+```
+
+## Two factors: `island` and `species`
+
+The **counts** of data in each factor are used to generate a *contingency table*.
+
+```{r penguins-tab, echo = TRUE, eval = TRUE}
+penguins |> tabyl(island, species)
+```
+
+</br>
+
+:::{.callout-important}
+## `janitor::tabyl` makes creating contingency tables easier. 
+
+The `chisq.test` can be applied to contingency `tabyls`.
+:::
+
+## Are island and species independent?
+
+```{r}
+#| echo: true
+#| eval: true
+penguins |> ggplot(aes(island, species)) + geom_bin_2d()
+```
+
+## Hypothesis for independence
+
+$H_0: \; p_{ij} = p_{i} \cdot p_{j} \; \forall (i,j)$, i.e. the two factors are independent (the joint distribution can be factored into product of marginals). 
+
+$H_a:$ $H_0$ is false, i.e. the two factors are associated. 
+
+:::{.callout-warning}
+## Calculation of $\chi^2$ test statistic
+
+Follows by considering the normalized squared deviations of the expected cell counts in the contingency table. 
+:::
+
+## Using `R` for Goodness-of-fit for independence
+
+```{r}
+#| echo: true
+#| eval: true
+penguins |> tabyl(island, species) |> janitor::chisq.test() 
+```
+</br>
+
+The data provide very strong evidence ($p < 10^{-16}$) to reject the null hypothesis. Species and island are associated. 
+
+
+# Inferences for ANOVA {.mySegue .center}
+
+
+## What hypothesis does ANOVA test?  {.mySegue .center}
+
+
+## The setting: Linear functions of means {.smaller}
+
+- Your sample has $m$ observations in total.
+- Your problem has $k$ populations with means $\mu_1, \dots, \mu_k$ (and equal variances). 
+- Suppose your ANOVA test is statistically significant. 
+
+:::{.callout-note}
+## Parameter of interest (linear function of means): 
+
+$$\theta = \sum_{i=1}^k c_i \mu_i\,,$$
+for constants $c_i$, $i=1,\dots,k$.
+:::
+
+## $100(1-\alpha)\%$ CI for $\theta$ 
+
+$$\sum_{i=1}^k c_i \bar{x}_i \pm t_{\alpha/2, m-k} \cdot \left(\mathsf{MSE} \sum_{i=1}^k \frac{c_i^2}{m_i}\right)^{1/2}$$
+
+This uses $\mathsf{MSE}$ as an estimator for population variance in $\mathsf{se}(\hat{\theta})$ and $\mathsf{t}(m-k)$ as the sampling distribution for $\hat{\theta}$. 
+
+## Example: ANOVA UK average salary {.smaller}
+
+Average salary data from 20 local councils. Is the mean average salary in each nation the same at 5\% significance level?
+
+```{r}
+#| echo: false
+#| warning: false
+#| message: false
+dattab <- salaries |>
+ group_by(nation) |>
+ summarise(observations = list(mean_salary), n = n(), means = signif(mean(mean_salary), digits = 4), ssds = signif(sd(mean_salary), digits = 4))
+kbl(dattab, col.names = c('Nation', "Average salaries ('000 £)", 'Size', 'Sample Mean', 'Sample SD'), align = c("l", "l", "c", "c", "c"), booktabs = T, escape = F)
+```   
+
+</br>
+```{r} 
+#| echo: true
+aov(mean_salary ~ nation, data = salaries) |> summary()
+```
+
+## $90\%$ CI for $(\mu_{Eng} - \mu_{Sco})$ {.smaller}
+
+
+
+What we know:
+
+$m = 20$ obs, $k=4$ groups, with "unequal" design: $m_{Eng} = 6$ and $m_{Sco} = 5$.  
+Sample means: $\hat{\mu}_{Eng} = 14.5$ and $\hat{\mu}_{Sco} = 13.0$.
+
+$\mathsf{MSE} = `r summary(oneway)[1][[1]][[3]][[2]]`$ from ANOVA output.
+
+Critical value:
+```{r} 
+#| echo: true
+qt(0.1/2, df = 20 - 4, lower.tail = FALSE)
+```
+
+Putting it all together...
+
+
+# Inferences for least squares models {.mySegue .center}
+
+
+## What parameters can inferences be made for in a least squares model? {.mySegue .center}
+
+## The setting: Least squares model {.smaller}
+
+- Simple linear regression model for response $Y$ with explanatory var $X$:
+$$ Y = \beta_0 + \beta_1 X + \epsilon \,.$$
+
+- Fitted (least squares) line:
+$$ \hat{y} = \widehat{\beta}_0 + \widehat{\beta}_1 x \,.$$
+
+:::{.callout-note}
+- Inferences for $\sigma^2$, variance of random deviation in model (i.e., variance of $\epsilon_i$)
+- Inferences for $\beta_0$ and $\beta_1$
+- Prediction intervals for $Y$ given $x$
+:::
+
+## Inferences for $\sigma^2$
+
+- Point estimate 
+$$S^2 = \frac{\mathsf{RSS}}{m-2}$$
+- CI and H-Test use:
+$$(m-2) \frac{S^2}{\sigma^2} \sim \chi^2(m-2) $$
+
+* RSS (residual sum of squares i.e. sum of the squares of residuals)
+
+## H-tests for $\beta_i$
+
+- Null hypothesis $H_0 : \beta_i = \beta_{i0}$. 
+
+- T test: 
+$$T = \frac{\widehat{\beta}_i - \beta_{i0}}{S \sqrt{c_{ii}}}$$
+where $c_{11} = 1/S_{xx}$ and $c_{00} = (\sum x_i^2)/(m S_{xx})$.
+
+- $P$ values are areas under $\mathsf{t}(m-2)$.
+
+## $100(1-\alpha)\%$ CI for $\beta_i$
+
+$$\widehat{\beta}_i \pm t_{\alpha/2, m-2} S \sqrt{c_{ii}}$$
+where $c_{11} = 1/S_{xx}$ and $c_{00} = (\sum x_i^2)/(m S_{xx})$.
+
+## Prediction Interval for $Y$
+
+**Prediction interval** for a value of $Y$ when $x = x^*$ is given by 
+$$(\widehat{\beta}_0 + \widehat{\beta}_1 x^*) \pm t_{\alpha/2, m-2} S \sqrt{1 + \frac{1}{n} + \frac{(x^* - \bar{x})^2}{S_{xx}}} $$
+
+:::{.callout-warning}
+## This is not the same as the confidence interval for expected $Y$. 
+
+The prediction interval is "wider" than the equivalent confidence interval!
+:::
+
+# Bonus {.mySegue .center}
+
+## {.center}
+
+![](images/adelie.png){style="padding:0px" alt="Taking mass of an adelie penguin."}
+
+## Example: Palmer penguins
+
+```{r}
+#| message: false
+#| warning: false
+ggplot(penguins, aes(x = body_mass_g, y = species, color = species)) +
+  geom_boxplot() + 
+  ylab("Species") + xlab("Body mass (g)") + theme(legend.position = "none")
+```
+
+## Example: Fit of body mass on species {.smaller}
+
+```{r}
+#| echo: true
+#| warning: false
+#| message: false
+fit <- lm(body_mass_g ~ species, data = penguins)
+summary(fit)
+```
+:::{.notes}
+- Defaults to an *effects parameterization*, whereby the first categorical group (here species) is the reference or baseline group and is called the intercept. 
+- Estimate for intercept is the first group’s (specie's) mean
+- Coefficients for the other groups represent the effect of being in that group, hence the effect parameterization. 
+- The way to get the group coefficients for all groups after the first group is to add the estimate of the intercept (first group) to each of the other groups
+- It is advisable to ignore the test statistics and p-values for the individual coefficients as there are better ways to examine them.
+- F-statistic is the test statistic for ANOVA, e.g., p-value <0.05 tells us that at least one group mean differs from another at the α=0.05 level of significance ...
+
+Recall:
+- Residual standard error: This is the standard deviation (spread) of residuals. 
+- Multiple R-squared: % of variance explained by model. While a higher R2 is "better", R2 always increases with additional model terms
+- Adjusted R-squared: % of variance explained by model adjusted for more model terms that may not be that explanatory. The formula for the adjusted R2 is: $1− (1−R^2) \frac{n−1}{n−p−1}$
+- F-statistic: statistic for the model (compared the t statistics which were for individual coefficients). F-statistic tests the null hypothesis that all model coefficients = 0 (ratio of two variances: variance explained by parameters and residual, unexplained variance). You will not typically report an F-statistic in a linear regression model, but you will for an ANOVA.
+:::
+
+## Example: Compare `lm` to `aov`...
+
+```{r}
+#| echo: true
+#| warning: false
+#| message: false
+onewaypenguin <- aov(body_mass_g ~ species, data = penguins)
+summary(onewaypenguin)
+```
+
+
+# Summary {.smaller}
+
+::::{.columns}
+:::{.column width="70%}
+- Goodness-of-fit tests using the $\chi^2$ distribution...
+  - ... for a single factor
+  - ... for independence of two factors
+- How to use `R` to evaluate goodness-of-fit
+- Inferences for ANOVA
+- Inferences for least squares models
+:::
+
+:::{.column width="30%"}
+![](images/getoutfree.jpg){width=100% .right style="padding:16px" alt="Get out of jail free."}
+:::
+::::
+
+:::{.callout-tip}
+## Today's materials 
+
+Slides posted to <https://dundeemath.github.io/MA22004-seminar09>.
+:::
